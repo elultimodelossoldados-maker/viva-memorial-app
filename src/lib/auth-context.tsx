@@ -137,7 +137,9 @@ function rowToMember(row: Record<string, unknown>): FamilyMember {
 // ── Provider ─────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  // Start as true for SSR, set false after mount, then back to true after init
   const [hydrated, setHydrated] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [altarsCache, setAltarsCache] = useState<Map<string, DeceasedPerson>>(new Map());
   const [familyCache, setFamilyCache] = useState<FamilyMember[]>([]);
   const [adoptionsCache, setAdoptionsCache] = useState<Set<string>>(new Set());
@@ -175,19 +177,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Session init ───────────────────────────────────────────────────────────
   useEffect(() => {
     let mounted = true;
-    // Absolute fallback: always unblock UI after 5 seconds no matter what
-    const hardTimeout = setTimeout(() => { if (mounted) setHydrated(true); }, 5000);
 
     const init = async () => {
+      const timeout = new Promise<void>(r => setTimeout(r, 4000));
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session && mounted) await onSession(session);
-        await Promise.all([loadAltars(), loadAllUsers()]);
+        await Promise.race([
+          (async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session && mounted) await onSession(session);
+            await Promise.all([loadAltars(), loadAllUsers()]);
+          })(),
+          timeout,
+        ]);
       } catch (e) {
         console.error("VIVA init error:", e);
       } finally {
-        clearTimeout(hardTimeout);
-        if (mounted) setHydrated(true);
+        setHydrated(true); // Always fire — never leave a blank screen
       }
     };
 
@@ -451,16 +456,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── All users (for public profiles) ───────────────────────────────────────
   const getAllUsers = (): User[] => allUsersCache;
 
-  if (!hydrated) return (
-    <div style={{
-      minHeight: "100vh", background: "#0a0a14",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      flexDirection: "column", gap: "1rem",
-    }}>
-      <div style={{ fontSize: "2.5rem", animation: "pulse 1.5s ease-in-out infinite" }}>🌹</div>
-      <div style={{ color: "rgba(201,168,76,0.7)", fontSize: "0.85rem", letterSpacing: "0.15em" }}>VIVA</div>
-    </div>
-  );
+  // Only show splash on client AFTER mount (not during SSR/hydration)
+  if (!hydrated) return null;
 
   return (
     <AuthContext.Provider value={{
