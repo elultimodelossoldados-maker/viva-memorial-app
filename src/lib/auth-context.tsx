@@ -175,22 +175,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Session init ───────────────────────────────────────────────────────────
   useEffect(() => {
     let mounted = true;
+    // Absolute fallback: always unblock UI after 5 seconds no matter what
+    const hardTimeout = setTimeout(() => { if (mounted) setHydrated(true); }, 5000);
 
     const init = async () => {
-      const timeout = new Promise<void>(r => setTimeout(r, 4000));
       try {
-        await Promise.race([
-          (async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session && mounted) await onSession(session);
-            await Promise.all([loadAltars(), loadAllUsers()]);
-          })(),
-          timeout,
-        ]);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && mounted) await onSession(session);
+        await Promise.all([loadAltars(), loadAllUsers()]);
       } catch (e) {
         console.error("VIVA init error:", e);
       } finally {
-        setHydrated(true); // Always fire — never leave a blank screen
+        clearTimeout(hardTimeout);
+        if (mounted) setHydrated(true);
       }
     };
 
