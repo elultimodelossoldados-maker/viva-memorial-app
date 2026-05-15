@@ -13,7 +13,9 @@ import { formatLocation } from "@/lib/locations";
 export default function AltarPage() {
   const pathname = usePathname();
   const id = pathname?.split("/altar/")[1]?.replace(/\/$/, "") || "_";
-  const { isAuthenticated, user, getDeceasedPerson, adoptarAltar, isAltarAdoptado, dejarOfrenda, encenderVela, updateAltar } = useAuth();
+  const { isAuthenticated, user, getDeceasedPerson, adoptarAltar, isAltarAdoptado,
+    dejarOfrenda, encenderVela, updateAltar,
+    requestAltarAccess, getRequestStatus } = useAuth();
 
   const altar = getDeceasedPerson(id);
   const adoptado = isAltarAdoptado(id);
@@ -21,10 +23,15 @@ export default function AltarPage() {
 
   const [activeTab, setActiveTab] = useState("historia");
   const [showAdoptModal, setShowAdoptModal] = useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
   const [adoptRelation, setAdoptRelation] = useState("");
+  const [requestMsg, setRequestMsg] = useState("");
   const [ofrendaMsg, setOfrendaMsg] = useState("");
   const [toast, setToast] = useState("");
   const [velas, setVelas] = useState(altar?.velas || 0);
+
+  const requestStatus = isAuthenticated && user ? getRequestStatus(id) : "none";
+  const hasFullAccess = isCreator || adoptado;
 
   // Edit state
   const [editBio, setEditBio] = useState(altar?.bio || "");
@@ -145,16 +152,44 @@ export default function AltarPage() {
 
           {/* Actions */}
           <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center", flexWrap: "wrap", marginTop: "1.75rem" }}>
-            {isAuthenticated ? (
-              <button className={`btn-adopt${adoptado ? " adopted" : ""}`}
-                onClick={() => adoptado ? showToast("✓ Ya adoptaste este Altar") : setShowAdoptModal(true)}>
-                {adoptado ? "✓ Altar Adoptado" : "🌹 ADOPTAR ALTAR"}
+            {isCreator ? (
+              // CREATOR: full control
+              <button className="btn-adopt adopted">👑 Eres el Creador</button>
+            ) : isAuthenticated && adoptado ? (
+              // APPROVED ADOPTER: full access
+              <button className="btn-adopt adopted"
+                onClick={() => showToast("✓ Ya adoptaste este Altar")}>
+                ✓ Altar Adoptado
+              </button>
+            ) : isAuthenticated && requestStatus === "pending" ? (
+              // REQUEST PENDING: waiting for approval
+              <button style={{
+                padding: "0.8rem 1.8rem", borderRadius: 50, border: "1px solid rgba(201,168,76,0.4)",
+                background: "rgba(201,168,76,0.08)", color: "rgba(201,168,76,0.7)",
+                cursor: "default", fontSize: "0.9rem", fontFamily: "var(--font-body)"
+              }}>
+                ⏳ Solicitud enviada — esperando aprobación
+              </button>
+            ) : isAuthenticated && requestStatus === "rejected" ? (
+              // REJECTED: show message
+              <button style={{
+                padding: "0.8rem 1.8rem", borderRadius: 50, border: "1px solid rgba(212,69,107,0.4)",
+                background: "rgba(212,69,107,0.08)", color: "rgba(212,69,107,0.7)",
+                cursor: "default", fontSize: "0.9rem", fontFamily: "var(--font-body)"
+              }}>
+                ✕ Solicitud no aprobada
+              </button>
+            ) : isAuthenticated ? (
+              // LOGGED IN but no access: request access
+              <button className="btn-adopt" onClick={() => setShowRequestModal(true)}>
+                🌹 Solicitar Acceso al Altar
               </button>
             ) : (
-              <Link href="/register"><button className="btn-adopt">🌹 Adoptar este Altar</button></Link>
+              // NOT LOGGED IN
+              <Link href="/register"><button className="btn-adopt">🌹 Únete para adoptar este Altar</button></Link>
             )}
-            <button onClick={() => { encenderVela(id); setVelas(v => v + 1); showToast("🕯️ Vela encendida"); }}
-              style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.8rem 1.5rem", borderRadius: 50, border: "1px solid var(--altar-border)", background: "var(--altar-glass)", color: "var(--altar-candle)", cursor: "pointer", fontSize: "0.9rem", fontFamily: "var(--font-body)", transition: "all 0.2s" }}>
+            <button onClick={() => { if (hasFullAccess || isCreator) { encenderVela(id); setVelas(v => v + 1); showToast("🕯️ Vela encendida"); } else showToast("⚠️ Debes ser adoptante para encender velas"); }}
+              style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.8rem 1.5rem", borderRadius: 50, border: "1px solid var(--altar-border)", background: "var(--altar-glass)", color: hasFullAccess ? "var(--altar-candle)" : "var(--altar-text-muted)", cursor: "pointer", fontSize: "0.9rem", fontFamily: "var(--font-body)", transition: "all 0.2s" }}>
               🕯️ {velas} velas
             </button>
             <button onClick={() => { navigator.clipboard?.writeText(window.location.href); showToast("🔗 Enlace copiado"); }}
@@ -207,7 +242,7 @@ export default function AltarPage() {
 
             {activeTab === "ofrendas" && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                {isAuthenticated && (
+                {hasFullAccess ? (
                   <div className="altar-card" style={{ padding: "1.5rem", marginBottom: "1rem" }}>
                     <h3 style={{ marginBottom: "1rem", color: "var(--altar-marigold)", fontSize: "0.95rem" }}>🕯️ Dejar una Ofrenda</h3>
                     <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem" }}>
@@ -221,6 +256,21 @@ export default function AltarPage() {
                     <textarea className="input-viva" value={ofrendaMsg} onChange={e => setOfrendaMsg(e.target.value)}
                       placeholder="Escribe un mensaje de amor... (opcional)"
                       style={{ resize: "none", minHeight: 80, background: "var(--altar-glass)", borderColor: "var(--altar-border)", color: "var(--altar-text)" }} />
+                  </div>
+                ) : (
+                  <div className="altar-card" style={{ padding: "2rem", textAlign: "center", marginBottom: "1rem" }}>
+                    <div style={{ fontSize: "2rem", marginBottom: "0.75rem" }}>🔒</div>
+                    <h3 style={{ color: "var(--altar-marigold)", marginBottom: "0.5rem" }}>Acceso restringido</h3>
+                    <p style={{ color: "var(--altar-text-muted)", fontSize: "0.88rem", marginBottom: "1rem" }}>
+                      Solo las familias adoptantes pueden dejar ofrendas. Solicita acceso al creador del altar.
+                    </p>
+                    {isAuthenticated && requestStatus === "none" && (
+                      <button className="btn-adopt" style={{ fontSize: "0.85rem" }} onClick={() => setShowRequestModal(true)}>
+                        🌹 Solicitar Acceso
+                      </button>
+                    )}
+                    {requestStatus === "pending" && <p style={{ color: "rgba(201,168,76,0.7)", fontSize: "0.83rem" }}>⏳ Tu solicitud está pendiente de aprobación</p>}
+                    {!isAuthenticated && <Link href="/register"><button className="btn-adopt" style={{ fontSize: "0.85rem" }}>Únete para participar</button></Link>}
                   </div>
                 )}
                 {(altar.ofrendas?.length ?? 0) > 0 ? altar.ofrendas.map(o => (
@@ -433,7 +483,52 @@ export default function AltarPage() {
         </div>
       </div>
 
-      {/* Adopt Modal */}
+      {/* Request Access Modal (Facebook-style) */}
+      <AnimatePresence>
+        {showRequestModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.88)", backdropFilter: "blur(10px)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}
+            onClick={() => setShowRequestModal(false)}>
+            <motion.div initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9 }}
+              onClick={e => e.stopPropagation()}
+              style={{ background: "var(--altar-card)", border: "1px solid var(--altar-border)", borderRadius: 24, padding: "2.5rem", width: "100%", maxWidth: 460, boxShadow: "var(--altar-shadow)" }}>
+              <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+                <div style={{ fontSize: "3rem", marginBottom: "0.75rem" }}>🌹</div>
+                <h2 className="font-display" style={{ fontSize: "1.6rem", color: "var(--altar-text)", marginBottom: "0.5rem" }}>Solicitar Acceso</h2>
+                <p style={{ color: "var(--altar-text-muted)", fontSize: "0.88rem" }}>
+                  Envía una solicitud al creador del Altar de <strong style={{ color: "var(--altar-marigold)" }}>{altar.name}</strong>.
+                  Cuando sea aprobada, podrás participar en el altar.
+                </p>
+              </div>
+              <div style={{ background: "rgba(255,157,0,0.06)", border: "1px solid var(--altar-border)", borderRadius: 12, padding: "1rem", marginBottom: "1.25rem", fontSize: "0.82rem", color: "var(--altar-text-muted)" }}>
+                🔒 Este altar usa acceso con aprobación — igual que los muros de Facebook.
+                El creador recibirá tu solicitud y podrá aceptarla o rechazarla.
+              </div>
+              <textarea className="input-viva" value={requestMsg} onChange={e => setRequestMsg(e.target.value)}
+                placeholder="Escribe un mensaje personal... ¿Cuál es tu relación con este ser querido? (opcional)"
+                rows={3}
+                style={{ resize: "none", background: "var(--altar-glass)", borderColor: "var(--altar-border)", color: "var(--altar-text)", marginBottom: "1.25rem" }} />
+              <div style={{ display: "flex", gap: "0.75rem" }}>
+                <button onClick={() => setShowRequestModal(false)}
+                  style={{ flex: 1, padding: "0.8rem", borderRadius: 50, border: "1px solid var(--altar-border)", background: "transparent", color: "var(--altar-text-muted)", cursor: "pointer", fontFamily: "var(--font-body)", fontSize: "0.9rem" }}>
+                  Cancelar
+                </button>
+                <button className="btn-adopt" style={{ flex: 2 }}
+                  onClick={async () => {
+                    const result = await requestAltarAccess(id, requestMsg);
+                    setShowRequestModal(false);
+                    if (result.ok) showToast("✅ Solicitud enviada — el creador la revisará");
+                    else showToast(`⚠️ ${result.error}`);
+                  }}>
+                  🌹 Enviar Solicitud
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Adopt Modal (for creators only or open altars) */}
       <AnimatePresence>
         {showAdoptModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
