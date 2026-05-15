@@ -9,7 +9,8 @@ import Link from "next/link";
 import { formatLocation } from "@/lib/locations";
 
 export default function ProfilePage() {
-  const { user, isAuthenticated, getFamilyMembers, getAllDeceased, getAltaresAdoptados, updateProfile } = useAuth();
+  const { user, isAuthenticated, getFamilyMembers, getAllDeceased, getAltaresAdoptados, updateProfile,
+    getPendingRequests, getMyPendingRequests, respondToRequest } = useAuth();
 
   const [editMode, setEditMode] = useState(false);
   const [editName, setEditName] = useState("");
@@ -24,7 +25,7 @@ export default function ProfilePage() {
   const [dragOver, setDragOver] = useState(false);
   const [toast, setToast] = useState("");
   const [toastError, setToastError] = useState(false);
-  const [activeTab, setActiveTab] = useState<"altares"|"familiares"|"publicaciones">("altares");
+  const [activeTab, setActiveTab] = useState<"altares"|"familiares"|"publicaciones"|"solicitudes">("altares");
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -236,7 +237,12 @@ export default function ProfilePage() {
 
         {/* Tabs */}
         <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", borderBottom: "1px solid var(--glass-border)", paddingBottom: "0.75rem", flexWrap: "wrap" }}>
-          {([{ k: "altares", l: `🕯️ Mis Altares (${todosAltares.length})` }, { k: "familiares", l: `🌳 Familiares (${familyMembers.length})` }, { k: "publicaciones", l: "📝 Publicaciones" }] as const).map(t => (
+          {([
+            { k: "altares", l: `🕯️ Mis Altares (${todosAltares.length})` },
+            { k: "familiares", l: `🌳 Familiares (${familyMembers.length})` },
+            { k: "publicaciones", l: "📝 Publicaciones" },
+            { k: "solicitudes", l: `📨 Solicitudes${getPendingRequests().length > 0 ? ` (${getPendingRequests().length})` : ""}` },
+          ] as const).map(t => (
             <button key={t.k} onClick={() => setActiveTab(t.k)}
               style={{ background: activeTab === t.k ? "var(--gold-glass)" : "transparent", border: `1px solid ${activeTab === t.k ? "var(--gold-border)" : "transparent"}`, borderRadius: 50, padding: "0.4rem 1rem", cursor: "pointer", color: activeTab === t.k ? "var(--viva-gold)" : "var(--text-muted)", fontSize: "0.85rem", transition: "all 0.2s" }}>
               {t.l}
@@ -312,6 +318,76 @@ export default function ProfilePage() {
                   <Link href="/genealogy"><button className="btn-gold" style={{ fontSize: "0.85rem" }}>+ Agregar familiar</button></Link>
                 </div>
               </>
+            )}
+          </motion.div>
+        )}
+
+        {activeTab === "solicitudes" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            {/* Requests I RECEIVED (to approve/reject) */}
+            {getPendingRequests().length > 0 && (
+              <div style={{ marginBottom: "2rem" }}>
+                <h3 style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1rem", letterSpacing: "0.05em" }}>
+                  📥 SOLICITUDES DE ACCESO RECIBIDAS ({getPendingRequests().length})
+                </h3>
+                {getPendingRequests().map(req => (
+                  <div key={req.id} className="card" style={{ padding: "1.25rem", marginBottom: "0.75rem", display: "flex", gap: "1rem", alignItems: "center" }}>
+                    <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--gold-glass)", border: "2px solid var(--viva-gold)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.3rem", flexShrink: 0, overflow: "hidden" }}>
+                      {req.requesterAvatar
+                        ? <img src={req.requesterAvatar} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
+                        : (req.requesterName?.[0] || "?")}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: "0.9rem" }}>{req.requesterName || "Usuario"}</div>
+                      <div style={{ fontSize: "0.78rem", color: "var(--viva-gold)" }}>quiere acceder al Altar de <strong>{req.altarName}</strong></div>
+                      {req.message && <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "0.2rem", fontStyle: "italic" }}>" {req.message} "</div>}
+                      <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.15rem" }}>{new Date(req.createdAt).toLocaleDateString("es-MX")}</div>
+                    </div>
+                    <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
+                      <button
+                        onClick={async () => { const ok = await respondToRequest(req.id, "approved"); showToast(ok ? "✅ Acceso aprobado" : "⚠️ Error al aprobar"); }}
+                        style={{ padding: "0.5rem 1rem", borderRadius: 50, border: "1px solid rgba(26,140,100,0.5)", background: "rgba(26,140,100,0.1)", color: "#4caf80", cursor: "pointer", fontSize: "0.82rem", fontWeight: 700 }}>
+                        ✅ Aprobar
+                      </button>
+                      <button
+                        onClick={async () => { const ok = await respondToRequest(req.id, "rejected"); showToast(ok ? "❌ Solicitud rechazada" : "⚠️ Error"); }}
+                        style={{ padding: "0.5rem 1rem", borderRadius: 50, border: "1px solid rgba(212,69,107,0.4)", background: "rgba(212,69,107,0.08)", color: "#f48ca8", cursor: "pointer", fontSize: "0.82rem" }}>
+                        ❌ Rechazar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Requests I SENT (status tracking) */}
+            {getMyPendingRequests().length > 0 && (
+              <div>
+                <h3 style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "1rem", letterSpacing: "0.05em" }}>
+                  📤 MIS SOLICITUDES ENVIADAS
+                </h3>
+                {getMyPendingRequests().map(req => (
+                  <div key={req.id} className="card" style={{ padding: "1.25rem", marginBottom: "0.75rem", display: "flex", gap: "1rem", alignItems: "center" }}>
+                    <div style={{ fontSize: "2rem" }}>🕯️</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: "0.9rem" }}>Altar de {req.altarName}</div>
+                      <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                        Estado: <span style={{ color: req.status === "approved" ? "#4caf80" : req.status === "rejected" ? "#f48ca8" : "var(--viva-gold)" }}>
+                          {req.status === "pending" ? "⏳ Pendiente" : req.status === "approved" ? "✅ Aprobada" : "❌ Rechazada"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {getPendingRequests().length === 0 && getMyPendingRequests().length === 0 && (
+              <div style={{ textAlign: "center", padding: "3rem 1rem" }}>
+                <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📨</div>
+                <h3 style={{ color: "var(--viva-gold)", marginBottom: "0.5rem" }}>Sin solicitudes</h3>
+                <p style={{ color: "var(--text-muted)", fontSize: "0.88rem" }}>No tienes solicitudes de acceso pendientes.</p>
+              </div>
             )}
           </motion.div>
         )}
