@@ -1,49 +1,882 @@
+@import "tailwindcss";
+
+/* ============================================
+   VIVA — Design System Premium
+   Paleta: Obsidiana + Oro + Cempasúchil
+============================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Core Colors */
+  --viva-black: #080810;
+  --viva-dark: #0f0f1a;
+  --viva-dark-2: #161625;
+  --viva-dark-3: #1e1e30;
+  --viva-card: #1a1a2e;
+
+  /* Gold Palette */
+  --viva-gold: #c9a84c;
+  --viva-gold-lt: #f0c060;
+  --viva-gold-dk: #8a6c2a;
+  --viva-gold-glow: rgba(201, 168, 76, 0.3);
+
+  /* Accent Colors */
+  --viva-orange: #e8650a;
+  --viva-orange-lt: #ff8c3a;
+  --viva-rose: #d4456b;
+  --viva-rose-lt: #f06090;
+  --viva-purple: #6b2fa0;
+  --viva-purple-lt: #9b59f0;
+  --viva-teal: #1a8c8c;
+
+  /* Glass */
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-hover: rgba(255, 255, 255, 0.07);
+  --gold-glass: rgba(201, 168, 76, 0.08);
+  --gold-border: rgba(201, 168, 76, 0.2);
+
+  /* Text */
+  --text-primary: #f0ede8;
+  --text-secondary: #b0a898;
+  --text-muted: #6b6570;
+
+  /* Fonts */
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-cinzel), Georgia, serif;
+
+  /* Shadows */
+  --shadow-gold: 0 0 30px rgba(201, 168, 76, 0.2);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.7);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ============================================
+   ALTAR — Design Tokens (Santuarios Digitales)
+============================================ */
+
+:root {
+  /* Altar Palette — Día de Muertos Elegante */
+  --altar-bg: #05050e;
+  --altar-deep: #080812;
+  --altar-card: #0f0f20;
+  --altar-candle: #ff9d00;
+  --altar-candle-lt: #ffcc44;
+  --altar-candle-glow: rgba(255, 157, 0, 0.35);
+  --altar-candle-halo: rgba(255, 200, 80, 0.12);
+  --altar-marigold: #f5a623;
+  --altar-marigold-dk: #c47d10;
+  --altar-rose-deep: #8b1a1a;
+  --altar-rose: #c0392b;
+  --altar-incense: rgba(150, 100, 200, 0.08);
+  --altar-smoke: rgba(200, 180, 120, 0.04);
+  --altar-glass: rgba(255, 220, 150, 0.05);
+  --altar-border: rgba(255, 200, 100, 0.14);
+  --altar-border-glow: rgba(255, 200, 100, 0.35);
+  --altar-gold-glow: rgba(245, 166, 35, 0.4);
+  --altar-text: #f5e8c8;
+  --altar-text-muted: #8a7a5a;
+  --altar-shadow: 0 0 40px rgba(255, 157, 0, 0.2), 0 20px 60px rgba(0,0,0,0.8);
 }
 
-html {
-  height: 100%;
-}
-
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+/* ============================================
+   Base Reset
+============================================ */
 
 * {
   box-sizing: border-box;
-  padding: 0;
   margin: 0;
+  padding: 0;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+html {
+  scroll-behavior: smooth;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+body {
+  font-family: var(--font-body);
+  background-color: var(--viva-black);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ============================================
+   Scrollbar Premium
+============================================ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--viva-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--viva-gold-dk);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--viva-gold);
+}
+
+/* ============================================
+   Typography
+============================================ */
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.text-gold {
+  color: var(--viva-gold);
+}
+.text-gold-lt {
+  color: var(--viva-gold-lt);
+}
+.text-rose {
+  color: var(--viva-rose);
+}
+.text-orange {
+  color: var(--viva-orange);
+}
+.text-muted {
+  color: var(--text-muted);
+}
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+/* ============================================
+   Glass Components
+============================================ */
+
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.glass-gold {
+  background: var(--gold-glass);
+  border: 1px solid var(--gold-border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.card {
+  background: var(--viva-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+}
+
+.card-hover {
+  transition: all 0.3s ease;
+}
+.card-hover:hover {
+  border-color: var(--gold-border);
+  box-shadow: var(--shadow-gold);
+  transform: translateY(-2px);
+}
+
+/* ============================================
+   Buttons
+============================================ */
+
+.btn-gold {
+  background: linear-gradient(135deg, var(--viva-gold), var(--viva-orange));
+  color: #0a0a0f;
+  font-weight: 700;
+  padding: 0.75rem 1.5rem;
+  border-radius: 50px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: var(--font-body);
+  letter-spacing: 0.02em;
+}
+.btn-gold:hover {
+  box-shadow: 0 8px 25px rgba(201, 168, 76, 0.4);
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.btn-glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  padding: 0.75rem 1.5rem;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: var(--font-body);
+  backdrop-filter: blur(10px);
+}
+.btn-glass:hover {
+  background: var(--glass-hover);
+  border-color: var(--gold-border);
+  color: var(--viva-gold-lt);
+}
+
+.btn-rose {
+  background: linear-gradient(135deg, var(--viva-rose), var(--viva-purple));
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 50px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
+.btn-rose:hover {
+  box-shadow: 0 8px 25px rgba(212, 69, 107, 0.4);
+  transform: translateY(-2px);
+}
+
+/* ============================================
+   Gradients
+============================================ */
+
+.gradient-gold {
+  background: linear-gradient(135deg, var(--viva-gold), var(--viva-orange));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-rose {
+  background: linear-gradient(135deg, var(--viva-rose), var(--viva-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-bg {
+  background: linear-gradient(
+    135deg,
+    var(--viva-black) 0%,
+    var(--viva-dark) 50%,
+    var(--viva-dark-2) 100%
+  );
+}
+
+/* ============================================
+   Particle Canvas
+============================================ */
+
+.particle-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================
+   Gold Glow Effects
+============================================ */
+
+.glow-gold {
+  box-shadow: 0 0 20px rgba(201, 168, 76, 0.3),
+    0 0 40px rgba(201, 168, 76, 0.1);
+}
+
+.glow-rose {
+  box-shadow: 0 0 20px rgba(212, 69, 107, 0.4);
+}
+
+.glow-text-gold {
+  text-shadow: 0 0 20px rgba(201, 168, 76, 0.5);
+}
+
+/* ============================================
+   Animated Borders
+============================================ */
+
+@keyframes borderGlow {
+  0%,
+  100% {
+    border-color: rgba(201, 168, 76, 0.2);
+  }
+  50% {
+    border-color: rgba(201, 168, 76, 0.6);
   }
 }
+
+.border-animate {
+  animation: borderGlow 3s ease infinite;
+}
+
+/* ============================================
+   Live Badge
+============================================ */
+
+@keyframes livePulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+.live-badge {
+  background: #e00;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  animation: livePulse 1.5s ease infinite;
+  letter-spacing: 0.1em;
+}
+
+/* ============================================
+   Candle Flame Animation
+============================================ */
+
+@keyframes flicker {
+  0%,
+  100% {
+    transform: scaleY(1) rotate(-1deg);
+    opacity: 0.9;
+  }
+  25% {
+    transform: scaleY(1.05) rotate(1deg);
+    opacity: 1;
+  }
+  50% {
+    transform: scaleY(0.95) rotate(-2deg);
+    opacity: 0.85;
+  }
+  75% {
+    transform: scaleY(1.02) rotate(1.5deg);
+    opacity: 0.95;
+  }
+}
+
+.flame {
+  animation: flicker 2s ease-in-out infinite;
+  display: inline-block;
+  transform-origin: bottom center;
+}
+
+/* ============================================
+   Story Ring
+============================================ */
+
+@keyframes storyRing {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.story-ring {
+  background: linear-gradient(
+    45deg,
+    var(--viva-gold),
+    var(--viva-orange),
+    var(--viva-rose),
+    var(--viva-purple)
+  );
+  background-size: 300% 300%;
+  animation: storyRing 3s ease infinite;
+  padding: 2px;
+  border-radius: 50%;
+}
+
+/* ============================================
+   Feed Animations
+============================================ */
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation: fadeSlideUp 0.5s ease forwards;
+}
+
+/* ============================================
+   Reaction Bubble
+============================================ */
+
+.reaction-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 50px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.reaction-btn:hover {
+  background: var(--glass-hover);
+  border-color: var(--gold-border);
+  color: var(--viva-gold-lt);
+  transform: scale(1.05);
+}
+.reaction-btn.active {
+  background: var(--gold-glass);
+  border-color: var(--gold-border);
+  color: var(--viva-gold-lt);
+}
+
+/* ============================================
+   Sidebar Nav
+============================================ */
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.nav-item:hover {
+  background: var(--glass-bg);
+  color: var(--text-primary);
+}
+.nav-item.active {
+  background: var(--gold-glass);
+  color: var(--viva-gold);
+  border: 1px solid var(--gold-border);
+}
+
+/* ============================================
+   Input Styles
+============================================ */
+
+.input-viva {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  outline: none;
+}
+.input-viva::placeholder {
+  color: var(--text-muted);
+}
+.input-viva:focus {
+  border-color: var(--viva-gold);
+  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.1);
+}
+
+/* ============================================
+   Avatar Styles
+============================================ */
+
+.avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.avatar-gold {
+  border: 2px solid var(--viva-gold);
+}
+
+/* ============================================
+   Tag / Badge
+============================================ */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.tag-gold {
+  background: var(--gold-glass);
+  border-color: var(--gold-border);
+  color: var(--viva-gold-lt);
+}
+.tag-rose {
+  background: rgba(212, 69, 107, 0.1);
+  border-color: rgba(212, 69, 107, 0.3);
+  color: var(--viva-rose-lt);
+}
+.tag-green {
+  background: rgba(26, 140, 100, 0.1);
+  border-color: rgba(26, 140, 100, 0.3);
+  color: #4caf80;
+}
+
+/* ============================================
+   Section Divider
+============================================ */
+
+.divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--glass-border),
+    transparent
+  );
+  margin: 1.5rem 0;
+}
+
+/* ============================================
+   Scroll Snap for Stories
+============================================ */
+
+.stories-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  padding: 4px 0;
+}
+.stories-scroll::-webkit-scrollbar {
+  display: none;
+}
+.story-item {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   Map Pin Animation
+============================================ */
+
+@keyframes pinPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(201, 168, 76, 0);
+  }
+}
+
+.map-pin {
+  animation: pinPulse 2s ease infinite;
+}
+
+/* ============================================
+   Loading Skeleton
+============================================ */
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--viva-dark-2) 25%,
+    var(--viva-dark-3) 50%,
+    var(--viva-dark-2) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+/* ============================================
+   Modal Backdrop
+============================================ */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 8, 16, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============================================
+   Utility
+============================================ */
+
+.truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.truncate-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.aspect-memorial {
+  aspect-ratio: 16/9;
+}
+
+.z-nav {
+  z-index: 50;
+}
+.z-modal {
+  z-index: 200;
+}
+.z-toast {
+  z-index: 300;
+}
+
+/* ============================================
+   ALTAR — Animations
+============================================ */
+
+@keyframes candleGlow {
+  0%, 100% {
+    box-shadow: 0 0 12px 3px var(--altar-candle-glow),
+                0 0 30px 6px var(--altar-candle-halo);
+    opacity: 0.9;
+  }
+  33% {
+    box-shadow: 0 0 18px 5px var(--altar-candle-glow),
+                0 0 45px 10px var(--altar-candle-halo);
+    opacity: 1;
+  }
+  66% {
+    box-shadow: 0 0 10px 2px var(--altar-candle-glow),
+                0 0 25px 4px var(--altar-candle-halo);
+    opacity: 0.85;
+  }
+}
+
+@keyframes candleFlicker {
+  0%, 100% { transform: scaleX(1) scaleY(1) rotate(-1deg); }
+  20%       { transform: scaleX(0.9) scaleY(1.08) rotate(1.5deg); }
+  40%       { transform: scaleX(1.05) scaleY(0.94) rotate(-2deg); }
+  60%       { transform: scaleX(0.95) scaleY(1.05) rotate(1deg); }
+  80%       { transform: scaleX(1.02) scaleY(0.97) rotate(-1deg); }
+}
+
+@keyframes smokeRise {
+  0%   { opacity: 0; transform: translateY(0) scaleX(1); }
+  20%  { opacity: 0.5; }
+  80%  { opacity: 0.15; transform: translateY(-60px) scaleX(2.5); }
+  100% { opacity: 0; transform: translateY(-90px) scaleX(3); }
+}
+
+@keyframes petalFall {
+  0%   { opacity: 0; transform: translateY(-20px) rotate(0deg) translateX(0); }
+  10%  { opacity: 0.8; }
+  90%  { opacity: 0.6; }
+  100% { opacity: 0; transform: translateY(100vh) rotate(720deg) translateX(40px); }
+}
+
+@keyframes altarEntrance {
+  from { opacity: 0; transform: scale(0.97) translateY(16px); filter: blur(4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+}
+
+@keyframes haloExpand {
+  0%   { box-shadow: 0 0 0 0 var(--altar-candle-glow); }
+  70%  { box-shadow: 0 0 0 20px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+@keyframes altarGoldPulse {
+  0%, 100% { border-color: var(--altar-border); }
+  50%       { border-color: var(--altar-border-glow); }
+}
+
+/* ============================================
+   ALTAR — Components
+============================================ */
+
+/* Hero wrapper */
+.altar-hero {
+  position: relative;
+  background: radial-gradient(ellipse at 50% 30%,
+    rgba(255, 157, 0, 0.08) 0%,
+    rgba(150, 80, 10, 0.04) 40%,
+    var(--altar-bg) 70%);
+  animation: altarEntrance 1.2s ease forwards;
+  overflow: hidden;
+}
+
+/* Altar card panel */
+.altar-card {
+  background: var(--altar-card);
+  border: 1px solid var(--altar-border);
+  border-radius: 20px;
+  animation: altarGoldPulse 4s ease infinite;
+}
+
+/* Animated candle element */
+.altar-candle-el {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+}
+.altar-candle-flame {
+  font-size: 1.4rem;
+  animation: candleFlicker 2.5s ease-in-out infinite;
+  transform-origin: bottom center;
+  filter: drop-shadow(0 0 6px var(--altar-candle));
+}
+.altar-candle-glow-el {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--altar-candle);
+  animation: candleGlow 2s ease-in-out infinite;
+}
+
+/* Smoke particle */
+.altar-smoke-particle {
+  width: 6px;
+  height: 30px;
+  background: linear-gradient(to top, rgba(200,180,120,0.3), transparent);
+  border-radius: 50%;
+  animation: smokeRise 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Adopt button */
+.btn-adopt {
+  background: linear-gradient(135deg, var(--altar-marigold), var(--altar-rose));
+  color: #fff;
+  font-weight: 700;
+  padding: 0.8rem 2rem;
+  border-radius: 50px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 0.04em;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 20px var(--altar-gold-glow);
+}
+.btn-adopt:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px var(--altar-gold-glow);
+  filter: brightness(1.1);
+}
+.btn-adopt.adopted {
+  background: linear-gradient(135deg, #2a5a2a, #1a4a2a);
+  box-shadow: 0 4px 20px rgba(50, 150, 80, 0.3);
+}
+
+/* Ofrenda button */
+.btn-ofrenda {
+  background: var(--altar-glass);
+  border: 1px solid var(--altar-border);
+  color: var(--altar-text);
+  padding: 0.65rem 1.25rem;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-size: 0.88rem;
+  backdrop-filter: blur(12px);
+}
+.btn-ofrenda:hover {
+  background: var(--altar-candle-halo);
+  border-color: var(--altar-border-glow);
+  color: var(--altar-candle-lt);
+  transform: scale(1.04);
+}
+
+/* Tributo button (replaces reaction-btn on altars) */
+.tributo-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 50px;
+  border: 1px solid var(--altar-border);
+  background: var(--altar-glass);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+  color: var(--altar-text-muted);
+  backdrop-filter: blur(8px);
+}
+.tributo-btn:hover {
+  background: var(--altar-candle-halo);
+  border-color: var(--altar-candle-glow);
+  color: var(--altar-candle-lt);
+  transform: scale(1.06);
+}
+.tributo-btn.active {
+  background: rgba(255, 157, 0, 0.15);
+  border-color: var(--altar-candle-glow);
+  color: var(--altar-candle-lt);
+}
+
+/* Glass panel for altar sidebars */
+.altar-glass-panel {
+  background: var(--altar-glass);
+  border: 1px solid var(--altar-border);
+  border-radius: 16px;
+  backdrop-filter: blur(16px);
+}
+
+/* Adoptante chip */
+.adoptante-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--altar-glass);
+  border: 1px solid var(--altar-border);
+  transition: all 0.2s;
+}
+.adoptante-chip:hover {
+  border-color: var(--altar-border-glow);
+  background: var(--altar-candle-halo);
+}
+
+/* Avatar with marigold ring */
+.avatar-altar {
+  border-radius: 50%;
+  border: 2px solid var(--altar-marigold);
+  box-shadow: 0 0 14px var(--altar-gold-glow);
+  object-fit: cover;
+}
+
