@@ -21,6 +21,20 @@ export interface FamilyMember {
 }
 
 export type OfrendarTipo = "vela" | "flor" | "mensaje" | "foto" | "oración" | "carta" | "cancion";
+
+export interface AltarAccessRequest {
+  id: string;
+  altarId: string;
+  requesterId: string;
+  ownerId: string;
+  status: "pending" | "approved" | "rejected";
+  message?: string;
+  createdAt: string;
+  // Populated for display
+  requesterName?: string;
+  requesterAvatar?: string;
+  altarName?: string;
+}
 export interface Ofrenda { id: string; tipo: OfrendarTipo; contenido?: string; userId: string; createdAt: string; emoji?: string; userName?: string; }
 
 export interface ConnectedFamily {
@@ -66,6 +80,12 @@ interface AuthContextType {
   updateAltar: (altarId: string, data: Partial<DeceasedPerson>) => Promise<boolean>;
   updateProfile: (data: Partial<User>) => Promise<{ ok: boolean; error?: string }>;
   createAltar: (data: Omit<DeceasedPerson, "id" | "createdBy" | "familyTreeId" | "connectedFamilies" | "velas" | "flores" | "ofrendas">) => Promise<string | null>;
+  // Access request system (Facebook-style)
+  requestAltarAccess: (altarId: string, message?: string) => Promise<{ ok: boolean; error?: string }>;
+  getPendingRequests: () => AltarAccessRequest[];
+  getMyPendingRequests: () => AltarAccessRequest[];
+  respondToRequest: (requestId: string, status: "approved" | "rejected") => Promise<boolean>;
+  getRequestStatus: (altarId: string) => "none" | "pending" | "approved" | "rejected";
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -137,13 +157,12 @@ function rowToMember(row: Record<string, unknown>): FamilyMember {
 // ── Provider ─────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  // Start as true for SSR, set false after mount, then back to true after init
   const [hydrated, setHydrated] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [altarsCache, setAltarsCache] = useState<Map<string, DeceasedPerson>>(new Map());
   const [familyCache, setFamilyCache] = useState<FamilyMember[]>([]);
   const [adoptionsCache, setAdoptionsCache] = useState<Set<string>>(new Set());
   const [allUsersCache, setAllUsersCache] = useState<User[]>([]);
+  const [requestsCache, setRequestsCache] = useState<AltarAccessRequest[]>([]);
   const sbUserRef = useRef<SBUser | null>(null);
 
   // ── Load altars ────────────────────────────────────────────────────────────
@@ -174,6 +193,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data) setAllUsersCache(data.map((r: Record<string, unknown>) => rowToUser(r, "")));
   };
 
+  // ── Load access requests (both sent and received) ─────────────────────────
+  const loadRequests = async (userId: string) => {
+    const { data } = await supabase
+      .from("altar_access_requests")
+      .select("*")
+      .or(`requester_id.eq.${userId},owner_id.eq.${userId}`);
+    if (data) {
+      const requests: AltarAccessRequest[] = data.map((r: Record<string, unknown>) => ({
+        id: r.id as string,
+        altarId: r.altar_id as string,
+        requesterId: r.requester_id as string,
+        ownerId: r.owner_id as string,
+        status: r.status as "pending" | "approved" | "rejected",
+        message: r.message as string | undefined,
+        createdAt: r.created_at as string,
+      }));
+      // Enrich with names from caches
+      const enriched = requests.map(req => {
+        const requester = allUsersCache.find(u => u.id === req.requesterId);
+        const altar = altarsCache.get(req.altarId);
+        return {
+          ...req,
+          requesterName: requester?.name || "Usuario",
+          requesterAvatar: requester?.avatar || "",
+          altarName: altar?.name || "Altar",
+        };
+      });
+      setRequestsCache(enriched);
+    }
+  };
+
   // ── Session init ───────────────────────────────────────────────────────────
   useEffect(() => {
     let mounted = true;
@@ -201,7 +251,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!mounted) return;
       if (session) { await onSession(session); }
-      else { setUser(null); setFamilyCache([]); setAdoptionsCache(new Set()); sbUserRef.current = null; }
+      else { setUser(null); setFamilyCache([]); setAdoptionsCache(new Set()); setRequestsCache([]); sbUserRef.current = null; }
     });
 
     return () => { mounted = false; listener.subscription.unsubscribe(); };
@@ -214,6 +264,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(rowToUser(profile as Record<string, unknown>, session.user.email || ""));
       await loadFamily(session.user.id);
       await loadAdoptions(session.user.id);
+      await loadRequests(session.user.id);
     }
   };
 
@@ -456,8 +507,93 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── All users (for public profiles) ───────────────────────────────────────
   const getAllUsers = (): User[] => allUsersCache;
 
-  // Only show splash on client AFTER mount (not during SSR/hydration)
-  if (!hydrated) return null;
+  // ── Access Request System (Facebook-style) ─────────────────────────────────
+  const requestAltarAccess = async (altarId: string, message?: string): Promise<{ ok: boolean; error?: string }> => {
+    if (!user) return { ok: false, error: "Debes iniciar sesión" };
+    const altar = altarsCache.get(altarId);
+    if (!altar) return { ok: false, error: "Altar no encontrado" };
+    if (altar.createdBy === user.id) return { ok: false, error: "Eres el creador de este altar" };
+    if (adoptionsCache.has(altarId)) return { ok: false, error: "Ya adoptaste este altar" };
+
+    const { error } = await supabase.from("altar_access_requests").upsert({
+      altar_id: altarId,
+      requester_id: user.id,
+      owner_id: altar.createdBy,
+      status: "pending",
+      message: message || "",
+    }, { onConflict: "altar_id,requester_id" });
+
+    if (error) return { ok: false, error: error.message };
+    await loadRequests(user.id);
+    return { ok: true };
+  };
+
+  // Requests I received (I am the owner → need to approve/reject)
+  const getPendingRequests = (): AltarAccessRequest[] =>
+    requestsCache.filter(r => r.ownerId === user?.id && r.status === "pending");
+
+  // Requests I sent (I am the requester)
+  const getMyPendingRequests = (): AltarAccessRequest[] =>
+    requestsCache.filter(r => r.requesterId === user?.id);
+
+  const getRequestStatus = (altarId: string): "none" | "pending" | "approved" | "rejected" => {
+    if (!user) return "none";
+    const req = requestsCache.find(r => r.altarId === altarId && r.requesterId === user.id);
+    if (!req) return "none";
+    return req.status;
+  };
+
+  const respondToRequest = async (requestId: string, status: "approved" | "rejected"): Promise<boolean> => {
+    if (!user) return false;
+    const { error } = await supabase
+      .from("altar_access_requests")
+      .update({ status })
+      .eq("id", requestId)
+      .eq("owner_id", user.id);
+    if (error) return false;
+
+    // If approved → auto-adopt the altar for the requester
+    if (status === "approved") {
+      const req = requestsCache.find(r => r.id === requestId);
+      if (req) {
+        await supabase.from("altar_adoptions").upsert({
+          user_id: req.requesterId,
+          altar_id: req.altarId,
+          relation: "Familia adoptante",
+        });
+        // Add to connectedFamilies on altar
+        const altar = altarsCache.get(req.altarId);
+        if (altar) {
+          const requesterProfile = allUsersCache.find(u => u.id === req.requesterId);
+          const alreadyIn = altar.connectedFamilies.some(f => f.userId === req.requesterId);
+          if (!alreadyIn) {
+            const newFamily: ConnectedFamily = {
+              userId: req.requesterId,
+              userName: requesterProfile?.name || req.requesterName || "Usuario",
+              userAvatar: requesterProfile?.avatar || req.requesterAvatar || "",
+              relation: "Familia adoptante",
+              connectedAt: new Date().toISOString(),
+            };
+            await updateAltar(req.altarId, { connectedFamilies: [...altar.connectedFamilies, newFamily] });
+          }
+        }
+      }
+    }
+
+    await loadRequests(user.id);
+    return true;
+  };
+
+  if (!hydrated) return (
+    <div style={{
+      minHeight: "100vh", background: "#0a0a14",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      flexDirection: "column", gap: "1rem",
+    }}>
+      <div style={{ fontSize: "2.5rem", animation: "pulse 1.5s ease-in-out infinite" }}>🌹</div>
+      <div style={{ color: "rgba(201,168,76,0.7)", fontSize: "0.85rem", letterSpacing: "0.15em" }}>VIVA</div>
+    </div>
+  );
 
   return (
     <AuthContext.Provider value={{
@@ -468,6 +604,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       adoptarAltar, desadoptarAltar, isAltarAdoptado, getAltaresAdoptados,
       dejarOfrenda, encenderVela, dejarFlor,
       updateAltar, updateProfile, createAltar,
+      requestAltarAccess, getPendingRequests, getMyPendingRequests,
+      respondToRequest, getRequestStatus,
     }}>
       {children}
     </AuthContext.Provider>
