@@ -1,0 +1,28 @@
+# ── Node & Build artifacts ──
+node_modules
+.next
+out
+.turbo
+
+# ── Env files (real credentials) ──
+.env.local
+.env.production
+
+# ── Git ──
+.git
+.gitignore
+
+# ── IDE ──
+.vscode
+.idea
+
+# ── Misc ──
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# ── Docker itself ──
+Dockerfile*
+docker-compose*.yml
+nginx.conf
